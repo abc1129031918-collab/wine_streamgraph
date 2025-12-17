@@ -117,16 +117,18 @@ class WineStreamAnalyzer:
         # [NEW] 계열별 강화 리스트 (Booster Families)
         # 키(Key) 단어가 많이 언급되면, 리스트 안의 맛(Flavor)들을 강화시킵니다.
         self.flavor_families = {
-            'earth': ['Mineral', 'Vegetal', 'Animal', 'Woods'], # 흙내음은 미네랄, 식물성, 동물성, 나무 향을 모두 포함
-            'fruit': ['Citrus', 'Pome Fruit', 'Stone Fruit', 'Tropical', 'Red Berries', 'Black Berries'], # 모든 과일 카테고리
+            'earthy': ['Mineral', 'Vegetal', 'Animal', 'Woods','Earthy'], # 흙내음은 미네랄, 식물성, 동물성, 나무 향을 모두 포함
+            'fruity': ['Citrus', 'Pome Fruit', 'Stone Fruit', 'Tropical', 'Red Berries', 'Black Berries'], # 모든 과일 카테고리
             'floral': ['Floral'],
-            'Vegetal': ['Vegetal'], 
-            'wood': ['Woods'],
+            'vegetality': ['Vegetal'], 
+            'woody': ['Woods'],
             'malolactic': ['Malolactic', 'Yeast'], # 젖산 발효는 효모/빵 냄새와 연관됨
-            'nut': ['Nuts'],
-            'toast': ['Toasted', 'Spice'], # 토스트는 오크 숙성 스파이스와 연관됨
+            'nutty': ['Nuts'],
+            'toasty': ['Toasted', 'Spice'], # 토스트는 오크 숙성 스파이스와 연관됨
             'citrus': ['Citrus'],
-            'tropical': ['Tropical']
+            'tropical': ['Tropical'],
+            'funky': ['Funky','animal'],
+            'herbal': ['Herbal']
         }
 
     def _build_aroma_wheel_db(self):
@@ -144,28 +146,30 @@ class WineStreamAnalyzer:
             for word in keywords:
                 self.flavor_aliases[word] = primary_key
         
-        
-        add_flavors('Minerality', '#7E6E5C', ['earth']) # earthy 처리를 위해 추가
-        add_flavors('Fruity', '#C9244B', ['fruit'])  # fruity 처리를 위해 추가
-        add_flavors('Florality', '#7E6E5C', ['floral']) 
-        add_flavors('Vegetality', '#C9244B', ['Vegetal'])  
-        add_flavors('Woody', '#7E6E5C', ['wood']) 
-        add_flavors('Malolactic', '#C9244B', ['malolactic'])
-        add_flavors('Nutty', '#C9244B', ['nut'])
-        add_flavors('Toasty', '#C9244B', ['toast'])
-        add_flavors('Citrusity', '#C9244B', ['citrus'])
-        add_flavors('Tropicality', '#C9244B', ['tropical'])
-
-
-
+        add_flavors('forcategory', '#7E6E5C', ['earthy']) # earthy 처리를 위해 추가
+        add_flavors('forcategory', '#C9244B', ['fruity'])  # fruity 처리를 위해 추가
+        add_flavors('forcategory', '#7E6E5C', ['floral']) 
+        add_flavors('forcategory', '#C9244B', ['vegetality'])  
+        add_flavors('forcategory', '#7E6E5C', ['woody']) 
+        add_flavors('forcategory', '#C9244B', ['malolactic'])
+        add_flavors('forcategory', '#C9244B', ['nutty'])
+        add_flavors('forcategory', '#C9244B', ['toasty'])
+        add_flavors('forcategory', '#C9244B', ['citrus'])
+        add_flavors('forcategory', '#C9244B', ['tropical'])
+        add_flavors('forcategory', '#C9244B', ['herbal'])
+        add_flavors('forcategory', '#C9244B', ['funky'])
         # --- FRUITY ---
         add_flavors('Citrus', "#F5EE25", ['lemon'])
         add_flavors('Citrus', '#D6E253', ['lime'])
         add_flavors('Citrus', '#EAD55C', ['grapefruit'])
+        add_flavors('Citrus', "#EAB85C", ['tangerine'])
+        add_flavors('Citrus', '#F29C33', ['orange peel', 'orange'])
         add_flavors('Pome Fruit', '#D8E289', ['gooseberry'])
         add_flavors('Pome Fruit', '#DCE298', ['pear'])
-        add_flavors('Pome Fruit', "#DDCE89", ['apple'])
-        add_flavors('Pome Fruit', '#B8D676', ['green apple'])
+        add_flavors('Pome Fruit', "#ECD56E", ['apple'])
+        add_flavors('Pome Fruit', "#E6C73E", ['quince'])
+        add_flavors('Pome Fruit', "#A7D14C", ['green apple'])
+        add_flavors('Green Fruit', "#CCE798", ['gooseberry','goose berry'])
         add_flavors('Stone Fruit', '#F7CF6B', ['peach'])
         add_flavors('Stone Fruit', '#F7CF6B', ['apricot'])
         add_flavors('Tropical', '#F4C561', ['melon'])
@@ -174,7 +178,6 @@ class WineStreamAnalyzer:
         add_flavors('Tropical', '#E9B949', ['passion fruit', 'passionfruit'])
         add_flavors('Tropical', '#EBC47C', ['lychee'])
         add_flavors('Tropical', '#F2A93B', ['dried apricot'])
-        add_flavors('Citrus', '#F29C33', ['orange peel', 'orange'])
         add_flavors('Tropical', "#E9D287", ['banana'])
         add_flavors('Red Berries', '#C9244B', ['currant'])
         add_flavors('Red Berries', '#D93B57', ['raspberry'])
@@ -204,36 +207,49 @@ class WineStreamAnalyzer:
         add_flavors('Vegetal', "#B44945", ['rose hip'])
         add_flavors('Vegetal', "#B46945", ['tomato'])
         add_flavors('Vegetal', "#558554", ['cut grass', 'grass'])
-        add_flavors('Vegetal', '#4E8757', ['dill'])
-        add_flavors('Vegetal', '#437B55', ['thyme'])
-        add_flavors('Vegetal', '#3B7052', ['fern'])
-        add_flavors('Vegetal', '#34664F', ['mint'])
-        add_flavors('Vegetal', '#7A823B', ['hay'])
-        add_flavors('Vegetal', '#606436', ['black tea', 'tea'])
-        add_flavors('Vegetal', "#806036", ['tobacco'])
-        add_flavors('Vegetal', '#48633B', ['black currant leaf'])
-        add_flavors('Vegetal', '#3E5C3C', ['bay leaf'])
-        add_flavors('Vegetal', '#36523F', ['eucalyptus'])
+        add_flavors('Vegetal', "#6B8836", ['olive'])
+        add_flavors('Vegetal', "#389654", ['asparagus'])
+        add_flavors('Herbal', '#4E8757', ['cat pee','pee','Boxwood'])
+        add_flavors('Herbal', '#4E8757', ['dill'])
+        add_flavors('Herbal', '#437B55', ['thyme'])
+        add_flavors('Herbal', '#3B7052', ['fern'])
+        add_flavors('Herbal', '#34664F', ['mint'])
+        add_flavors('Herbal', '#7A823B', ['hay'])
+        add_flavors('Herbal', '#606436', ['black tea', 'tea'])
+        add_flavors('Herbal', "#806036", ['tobacco'])
+        add_flavors('Herbal', '#48633B', ['black currant leaf'])
+        add_flavors('Herbal', '#3E5C3C', ['bay leaf'])
+        add_flavors('Herbal', '#36523F', ['eucalyptus'])
 
         # --- MINERAL ---
+        add_flavors('Mineral', "#CAD7EB", ['chalk'])
         add_flavors('Mineral', "#7E92B1", ['mineral'])
-        add_flavors('Mineral', "#7E92B1", ['flint'])
+        add_flavors('Mineral', "#7E92B1", ['flint','flinty'])
         add_flavors('Mineral', "#A4B9D8", ['stone', 'wet stone'])
         add_flavors('Mineral', "#8271AA", ['iodine'])
         add_flavors('Mineral', "#738BAC", ['petrol', 'kerosene', 'diesel'])
+        add_flavors('Mineral', "#F3E7D0", ['beeswax', 'wax'])
+
+        add_flavors('Earthy', "#52332A", ['mushroom'])
+        add_flavors('Earthy', "#5F503E", ['soil', 'dirt'])
+        add_flavors('Earthy', "#857257", ['Truffle'])
+        add_flavors('Earthy', "#52332A", ['mushroom'])
 
         # --- OTHERS ---
         add_flavors('Honey', "#F3C164", ['honey'])
+        add_flavors('Honey', "#E7CD9B", ['honeycomb'])
         add_flavors('Honey', "#F3C164", ['marmalade'])
-        add_flavors('Yeast', '#F2E0B6', ['bread'])
+        add_flavors('Yeast', "#DFC790", ['bread'])
         add_flavors('Malolactic', "#F7F6C6", ['butter','buttery'])
         add_flavors('Malolactic', "#E7E1CD", ['cream'])
         add_flavors('Malolactic', '#EDD9A8', ['yeast'])
+        add_flavors('Malolactic', '#EDD9A8', ['milk chocolate'])
         add_flavors('Toasted', '#B88461', ['caramel'])
         add_flavors('Toasted', "#C08A4B", ['butterscotch'])
         add_flavors('Toasted', '#A37156', ['chocolate', 'cocoa'])
         add_flavors('Toasted', '#8F604D', ['toast'])
         add_flavors('Toasted', '#7A5043', ['coffee', 'espresso'])
+        add_flavors('Toasted', "#36211B", ['mocha'])
         add_flavors('Toasted', '#66423A', ['bacon', 'meaty'])
         add_flavors('Toasted', '#543632', ['smoke'])
         add_flavors('Toasted', '#422C2A', ['tar'])
@@ -243,7 +259,8 @@ class WineStreamAnalyzer:
         add_flavors('Spice', '#C46B35', ['cinnamon'])
         add_flavors('Spice', '#BB5E2F', ['liquorice', 'licorice'])
         add_flavors('Spice', '#B0502A', ['nutmeg'])
-        add_flavors('Spice', '#A64325', ['cloves'])
+        add_flavors('Spice', "#B0972A", ['ginger'])
+        add_flavors('Spice', '#A64325', ['clove'])
         add_flavors('Spice', "#69140D", ['anise'])
         add_flavors('Nuts', '#E3A836', ['coconut'])
         add_flavors('Nuts', '#D69830', ['hazelnut'])
@@ -252,11 +269,12 @@ class WineStreamAnalyzer:
         add_flavors('Woods', '#A86628', ['sandalwood'])
         add_flavors('Woods', '#965725', ['cedar'])
         add_flavors('Woods', '#854923', ['pine'])
-        add_flavors('Woods', "#382B23", ['graphite'])
+        add_flavors('Woods', "#382B23", ['graphite','lead pencil','pencil shavings'])
         add_flavors('Animal', '#7A5C55', ['leather', 'saddle'])
         add_flavors('Animal', '#694D47', ['gravy'])
-        add_flavors('Animal', "#6D3333", ['game'])
+        add_flavors('Animal', "#6D3333", ['game','barnyard'])
         add_flavors('Animal', "#D37843", ['musk'])
+        add_flavors('Sulfuric', "#D37843", ['gun powder'])
         add_flavors('Funky', "#C4A6C5", ['bubble gum','gum'])
         add_flavors('Faults', '#7DC4CC', ['corked', 'musty'])
         add_flavors('Faults', "#502037", ['sherry', 'oxidized']) 
@@ -268,6 +286,7 @@ class WineStreamAnalyzer:
         add_flavors('Faults', '#89B872', ['onion'])
         add_flavors('Faults', '#4D8076', ['sweet corn'])
         add_flavors('Faults', '#2F5C5A', ['horse sweat'])
+        add_flavors('Faults', "#3A0F04", ['brett'])
 
         return db
 
