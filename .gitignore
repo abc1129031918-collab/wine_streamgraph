@@ -1,0 +1,24 @@
+# 가상환경/캐시 무시
+.venv/
+venv/
+__pycache__/
+*.spec
+dist/
+build/
+
+batch_data.py
+batch_runner.py
+fastscrapper_proxy.py
+winery_list_scrapper.py
+preprocess_reviews.py
+vivino_wine_ids.jsonl
+# 크롬 프로필: 통째로 무시
+chrome_profile/
+
+# 기타
+proxy/
+review/
+cleaned/
+useless/
+*.log
+*.bak
