@@ -12,6 +12,7 @@ fastscrapper_proxy.py
 winery_list_scrapper.py
 preprocess_reviews.py
 vivino_wine_ids.jsonl
+update_category_map.py
 # 크롬 프로필: 통째로 무시
 chrome_profile/
 

@@ -1584,7 +1584,42 @@
     "paul jaboulet aîné": [
         "France",
         "Rhone Valley",
+        "Southern Rhône",
+        "Côtes-du-Rhône"
+    ],
+    "domaine des remizières": [
+        "France",
+        "Rhone Valley",
         "Northern Rhône",
-        "Crozes-Hermitage"
+        "Hermitage"
+    ],
+    "marc sorrel": [
+        "France",
+        "Rhone Valley",
+        "Northern Rhône",
+        "Hermitage"
+    ],
+    "domaine jean-louis chave": [
+        "France",
+        "Rhone Valley",
+        "Southern Rhône",
+        "Côtes-du-Rhône"
+    ],
+    "domaine finet": [
+        "France",
+        "Beaujolais",
+        "Juliénas"
+    ],
+    "ferraton père & fils": [
+        "France",
+        "Rhone Valley",
+        "Southern Rhône",
+        "Côtes-du-Rhône"
+    ],
+    "cave de tain": [
+        "France",
+        "Rhone Valley",
+        "Northern Rhône",
+        "Saint-Joseph"
     ]
 }

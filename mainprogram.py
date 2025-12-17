@@ -828,10 +828,10 @@ class WineStreamAnalyzer:
 
             if peak_height < min_thickness_threshold: continue
 
-            calculated_size = 10 + (peak_height * 5) 
+            calculated_size = 10 + (peak_height * peak_height * 10) 
             
             # 너무 작거나 너무 크지 않게 제한 (Min 8, Max 16)
-            final_fontsize = max(8, min(16, int(calculated_size)))
+            final_fontsize = max(8, min(20, int(calculated_size)))
 
             # Rotation Calc
             step = 8
