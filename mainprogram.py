@@ -222,7 +222,7 @@ class WineStreamAnalyzer:
         add_flavors('Herbal', '#36523F', ['eucalyptus'])
 
         # --- MINERAL ---
-        add_flavors('Mineral', "#CAD7EB", ['chalk'])
+        add_flavors('Mineral', "#CAD7EB", ['chalk','Limestone'])
         add_flavors('Mineral', "#7E92B1", ['mineral'])
         add_flavors('Mineral', "#7E92B1", ['flint','flinty'])
         add_flavors('Mineral', "#A4B9D8", ['stone', 'wet stone'])
@@ -232,8 +232,10 @@ class WineStreamAnalyzer:
 
         add_flavors('Earthy', "#52332A", ['mushroom'])
         add_flavors('Earthy', "#5F503E", ['soil', 'dirt'])
-        add_flavors('Earthy', "#857257", ['Truffle'])
-        add_flavors('Earthy', "#52332A", ['mushroom'])
+        add_flavors('Earthy', "#857257", ['truffle'])
+        add_flavors('Earthy', "#52332A", ['forest floor'])
+        add_flavors('Earthy', "#50616E", ['geosmin'])
+
 
         # --- OTHERS ---
         add_flavors('Honey', "#F3C164", ['honey'])
@@ -269,7 +271,7 @@ class WineStreamAnalyzer:
         add_flavors('Woods', '#A86628', ['sandalwood'])
         add_flavors('Woods', '#965725', ['cedar'])
         add_flavors('Woods', '#854923', ['pine'])
-        add_flavors('Woods', "#382B23", ['graphite','lead pencil','pencil shavings'])
+        add_flavors('Woods', "#382B23", ['graphite','lead pencil','pencil shaving'])
         add_flavors('Animal', '#7A5C55', ['leather', 'saddle'])
         add_flavors('Animal', '#694D47', ['gravy'])
         add_flavors('Animal', "#6D3333", ['game','barnyard'])
