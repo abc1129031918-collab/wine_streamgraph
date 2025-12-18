@@ -7,6 +7,7 @@ import matplotlib.colors as mcolors
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from collections import deque
+import sys
 import os
 import colorsys
 import matplotlib.patheffects as path_effects
@@ -21,6 +22,16 @@ import time
 
 matplotlib.use('TkAgg') 
 
+def resource_path(relative_path):
+    """실행 파일(.exe)과 같은 위치에 있는 외부 폴더/파일 경로를 반환"""
+    if getattr(sys, 'frozen', False):
+        # .exe로 실행 중일 때: .exe 파일이 있는 실제 디렉토리 경로
+        base_path = os.path.dirname(sys.executable)
+    else:
+        # 일반 .py로 실행 중일 때: 현재 소스 코드 폴더 경로
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 def draw_wine_graph_on_frame(analyzer, wine_data, target_frame):
     # 1. 기존 위젯 제거
     for widget in target_frame.winfo_children():
@@ -32,8 +43,8 @@ def draw_wine_graph_on_frame(analyzer, wine_data, target_frame):
     # -----------------------------------------------------
     # [수정] 폴더 경로 안전하게 확보
     # -----------------------------------------------------
-    raw_dir = "cleaned"
-    data_dir = "data" # 분석된 json이 저장될 폴더
+    raw_dir = resource_path("cleaned")
+    data_dir = resource_path("data")
     
     # 폴더가 없으면 만듭니다. (이게 없어서 저장이 안 된 것임)
     if not os.path.exists(data_dir):
@@ -88,7 +99,7 @@ class WineStreamAnalyzer:
     def __init__(self):
         # 1. 시간축 앵커
         self.section_anchors = {
-            'nose': 0.15, 'aroma': 0.15, 'bouquet': 0.15, 'smell': 0.15, 'scent': 0.15, 
+            'nose': 0.1, 'aroma': 0.1, 'bouquet': 0.15, 'smell': 0.15, 'scent': 0.15, 
             'sniff': 0.15, 'opening': 0.15, 'color': 0.05, 'eye': 0.05, 
             'attack': 0.15, 'entry': 0.15, 'start': 0.1,
             'palate': 0.5, 'taste': 0.5, 'mouth': 0.5, 'flavor': 0.5, 'flavour': 0.5,
@@ -119,6 +130,9 @@ class WineStreamAnalyzer:
         self.flavor_families = {
             'earthy': ['Mineral', 'Vegetal', 'Animal', 'Woods','Earthy'], # 흙내음은 미네랄, 식물성, 동물성, 나무 향을 모두 포함
             'fruity': ['Citrus', 'Pome Fruit', 'Stone Fruit', 'Tropical', 'Red Berries', 'Black Berries'], # 모든 과일 카테고리
+            'red fruit': ['Red Berries'],
+            'black fruit': ['Red Berries'],
+            'ripe': ['Dried Fruit'],
             'floral': ['Floral'],
             'vegetality': ['Vegetal'], 
             'woody': ['Woods'],
@@ -126,6 +140,7 @@ class WineStreamAnalyzer:
             'nutty': ['Nuts'],
             'toasty': ['Toasted', 'Spice'], # 토스트는 오크 숙성 스파이스와 연관됨
             'citrus': ['Citrus'],
+            'perfume': ['Floral','Herbal'],
             'tropical': ['Tropical'],
             'funky': ['Funky','animal'],
             'herbal': ['Herbal']
@@ -148,7 +163,7 @@ class WineStreamAnalyzer:
         
         add_flavors('forcategory', '#7E6E5C', ['earthy']) # earthy 처리를 위해 추가
         add_flavors('forcategory', '#C9244B', ['fruity'])  # fruity 처리를 위해 추가
-        add_flavors('forcategory', '#7E6E5C', ['floral']) 
+        add_flavors('forcategory', '#7E6E5C', ['floral','flower']) 
         add_flavors('forcategory', '#C9244B', ['vegetality'])  
         add_flavors('forcategory', '#7E6E5C', ['woody']) 
         add_flavors('forcategory', '#C9244B', ['malolactic'])
@@ -158,6 +173,11 @@ class WineStreamAnalyzer:
         add_flavors('forcategory', '#C9244B', ['tropical'])
         add_flavors('forcategory', '#C9244B', ['herbal'])
         add_flavors('forcategory', '#C9244B', ['funky'])
+        add_flavors('forcategory', '#C9244B', ['red fruit'])
+        add_flavors('forcategory', '#C9244B', ['black fruit'])
+        add_flavors('forcategory', '#C9244B', ['ripe'])
+        add_flavors('forcategory', '#C9244B', ['perfume'])
+
         # --- FRUITY ---
         add_flavors('Citrus', "#F5EE25", ['lemon'])
         add_flavors('Citrus', '#D6E253', ['lime'])
@@ -179,16 +199,18 @@ class WineStreamAnalyzer:
         add_flavors('Tropical', '#EBC47C', ['lychee'])
         add_flavors('Tropical', '#F2A93B', ['dried apricot'])
         add_flavors('Tropical', "#E9D287", ['banana'])
+        add_flavors('Red Berries', "#A81830", ['cherry'])
         add_flavors('Red Berries', '#C9244B', ['currant'])
         add_flavors('Red Berries', '#D93B57', ['raspberry'])
         add_flavors('Red Berries', '#C9244B', ['blackcurrant, cassis'])
         add_flavors('Red Berries', "#BE1940", ['redcurrant'])
         add_flavors('Red Berries', '#BA1E42', ['strawberry'])
-        add_flavors('Black Berries', '#911D46', ['blackberry'])
-        add_flavors('Black Berries', "#5F0F41", ['blackcherry'])
-        add_flavors('Stone Fruit', '#80284F', ['cherry'])
-        add_flavors('Stone Fruit', '#752A4F', ['plum'])
-        add_flavors('Stone Fruit', '#5C2442', ['prune'])
+        add_flavors('Black Berries', "#571949", ['blackcurrant, cassis'])
+        add_flavors('Black Berries', "#52152A", ['blackberry'])
+        add_flavors('Black Berries', "#330A14", ['blackcherry'])
+        add_flavors('Dried Fruit', "#611E52", ['plum'])
+        add_flavors('Dried Fruit', "#2A1536", ['prune'])
+        add_flavors('Dried Fruit', "#411111", ['raisin'])
 
         # --- FLORAL ---
         add_flavors('Floral', "#F7EDC5", ['honeysuckle'])
@@ -233,7 +255,7 @@ class WineStreamAnalyzer:
         add_flavors('Earthy', "#52332A", ['mushroom'])
         add_flavors('Earthy', "#5F503E", ['soil', 'dirt'])
         add_flavors('Earthy', "#857257", ['truffle'])
-        add_flavors('Earthy', "#52332A", ['forest floor'])
+        add_flavors('Earthy', "#5D5F49", ['forest floor'])
         add_flavors('Earthy', "#50616E", ['geosmin'])
 
 
@@ -834,16 +856,16 @@ class WineStreamAnalyzer:
             final_fontsize = max(8, min(20, int(calculated_size)))
 
             # Rotation Calc
-            step = 8
+            step = 5
             idx_prev = max(0, peak_idx - step)
             idx_next = min(len(x_axis) - 1, peak_idx + step)
             dy = center_line_array[idx_next] - center_line_array[idx_prev]
             dx = idx_next - idx_prev if idx_next != idx_prev else 1
             slope = dy / dx
             # [설정] 최대 각도 (원하는 값으로 변경)
-            MAX_ANGLE = 45 
+            MAX_ANGLE = 50 
             # 적용
-            rotation_angle = max(-MAX_ANGLE, min(MAX_ANGLE, slope * 1200))
+            rotation_angle = max(-MAX_ANGLE, min(MAX_ANGLE, slope * 1000))
 
             text_color = self._get_interpolated_color(bg_color_hex, factor=0.6)
             ax.text(peak_x, center_y, flavor_name,
@@ -1229,7 +1251,7 @@ class SearchTab(ttk.Frame):
 
         # 이미지 로드
         has_image = wine.get('image', 0)
-        image_path = os.path.join("image", f"wine_{wine_id}_image.png")
+        image_path = resource_path(os.path.join("image", f"wine_{wine_id}_image.png"))
         img_widget = None
 
         if has_image == 1 and os.path.exists(image_path):
@@ -1403,7 +1425,7 @@ class CategoryTab(ttk.Frame):
         self.current_filtered_wines = []
         
         # 저장할 파일명 정의
-        self.CATEGORY_DB_FILE = "winery_category_map.json"
+        self.CATEGORY_DB_FILE = resource_path("winery_category_map.json")
         
         # [핵심 1] 카테고리 DB 파일이 없으면 메타데이터를 분석해서 새로 만듭니다.
         if not os.path.exists(self.CATEGORY_DB_FILE):
@@ -1436,53 +1458,88 @@ class CategoryTab(ttk.Frame):
     # -------------------------------------------------------------------------
     def generate_category_db_from_metadata(self):
         """
-        현재 가지고 있는 self.metadata를 전수 조사하여
-        와이너리별 최적의 경로(Path)를 추출하고 JSON 파일로 저장합니다.
+        [최종 로직]
+        1. 기존 수동 수정 사항 보존 (JSON에 이미 있는 와이너리는 건너뜀)
+        2. 리뷰가 가장 많은 와인을 대표로 선정
+        3. 세부 지역명이 'cru'로 끝나면 해당 단계는 카테고리에서 제외 (등급 정보 필터링)
         """
-        print("📊 Analyzing metadata to build category structure...")
-        master_db = {} # Format: {"winery_name_lower": ["Country", "Region", "SubRegion"], ...}
-
+        print("📊 Updating category DB (Cru Filter + Manual Preservation)...")
+        
+        # 1. 기존 데이터 로드 (수동 수정본 보호용)
+        master_db = self.load_category_db()
+        existing_wineries = set(master_db.keys())
+        
+        # 2. 메타데이터 그룹화 (새로 추가할 와이너리만 대상)
+        winery_groups = {}
         for wine in self.metadata:
-            # 1. 필수 정보 추출
-            country = wine.get('country', 'Unknown')
-            raw_region = wine.get('region', [])
             winery_real = wine.get('winery')
-            
             if not winery_real: continue
             
             winery_key = winery_real.lower().strip()
-
-            # 2. 경로(Path) 구성
-            # 기본 경로: [Country]
-            current_path = [country]
             
-            # 지역 정보 추가 (리스트인 경우 순서대로 추가)
-            if isinstance(raw_region, list):
-                for r in raw_region:
-                    r_str = str(r).strip()
-                    # 국가명이 지역명에 또 들어가는 경우 중복 방지 (예: Italy > Italy)
-                    if r_str and r_str.lower() != country.lower():
-                        current_path.append(r_str)
-            elif raw_region:
-                r_str = str(raw_region).strip()
-                if r_str and r_str.lower() != country.lower():
-                    current_path.append(r_str)
+            # 이미 JSON에 등록된 와이너리는 사용자가 수정한 것으로 간주하여 건너뜀
+            if winery_key in existing_wineries:
+                continue
+                
+            if winery_key not in winery_groups:
+                winery_groups[winery_key] = []
+            winery_groups[winery_key].append(wine)
 
-            # 3. [중요] 경로 최적화 (더 자세한 정보가 있으면 업데이트)
-            # 같은 와이너리라도 어떤 와인은 "Bordeaux"만 있고, 어떤 와인은 "Bordeaux > Margaux"까지 있을 수 있음.
-            # 가장 긴(상세한) 경로를 채택합니다.
-            if winery_key in master_db:
-                existing_path = master_db[winery_key]
-                if len(current_path) > len(existing_path):
-                    master_db[winery_key] = current_path
-            else:
-                master_db[winery_key] = current_path
+        if not winery_groups:
+            print("✨ No new wineries to add. All manual edits are safe.")
+            return
 
-        # 4. 파일로 저장
+        # 3. 새로운 와이너리별 대표 선정 및 경로 최적화
+        new_added_count = 0
+        for winery_key, wines in winery_groups.items():
+            best_wine = None
+            max_reviews = 2000
+
+            # 리뷰 수(1순위)와 지역 상세도(2순위)로 대표 와인 선정
+            for wine in wines:
+                v_info = wine.get('vintage', {})
+                count = v_info.get('reviews_count', 0) if isinstance(v_info, dict) else 0
+                region_list = wine.get('region', [])
+                
+                if count > max_reviews:
+                    max_reviews = count
+                    best_wine = wine
+                elif count == max_reviews and best_wine is not None:
+                    curr_regions = best_wine.get('region', [])
+                    if len(region_list) > len(curr_regions):
+                        best_wine = wine
+                elif best_wine is None:
+                    best_wine = wine
+
+            # 4. [핵심] 경로 생성 및 'Cru' 필터링
+            if best_wine:
+                country = best_wine.get('country', 'Unknown')
+                regions = best_wine.get('region', [])
+                
+                if not isinstance(regions, list):
+                    regions = [regions] if regions else []
+
+                # --- Cru 필터링 로직 추가 ---
+                # 마지막 세부 지역명이 'cru'로 끝나면 해당 항목 제거
+                if regions:
+                    last_region_name = str(regions[-1]).strip().lower()
+                    if last_region_name.endswith('cru'):
+                        regions = regions[:-1] # 마지막 요소 제외
+
+                # 최종 경로 구성: [Country, Region1, Region2...]
+                path = [country]
+                for r in regions:
+                    if str(r).lower().strip() != country.lower():
+                        path.append(str(r).strip())
+                
+                master_db[winery_key] = path
+                new_added_count += 1
+
+        # 5. 결과 저장 (수동 수정본 + 신규 분석본 병합)
         try:
             with open(self.CATEGORY_DB_FILE, 'w', encoding='utf-8') as f:
                 json.dump(master_db, f, indent=4, ensure_ascii=False)
-            print(f"✅ Category DB saved to {self.CATEGORY_DB_FILE}")
+            print(f"✅ Success: {new_added_count} new wineries added. Cru filtered.")
         except Exception as e:
             print(f"❌ Failed to save category DB: {e}")
 
@@ -2426,7 +2483,7 @@ class WineApp:
         self.root.geometry("1920x1080")
         self.root.configure(bg='#1e1e1e')
 
-        self.wine_metadata = self.load_metadata("wine_metadata.jsonl")
+        self.wine_metadata = self.load_metadata(resource_path("wine_metadata.jsonl"))
         self.analyzer = WineStreamAnalyzer()
         self._init_ui()
 
