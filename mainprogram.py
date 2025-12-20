@@ -587,8 +587,8 @@ class WineStreamAnalyzer:
         
         final_candidates = []
         category_counts = {} 
-        MAX_TOTAL = 18       
-        MAX_PER_CAT = 3      
+        MAX_TOTAL = 30      
+        MAX_PER_CAT = 4      
 
         for flavor, curve in all_sorted:
             if len(final_candidates) >= MAX_TOTAL: break
@@ -727,8 +727,8 @@ class WineStreamAnalyzer:
         all_sorted = sorted(aggregated_curves.items(), key=lambda item: np.sum(item[1]), reverse=True)
         final_candidates = []
         category_counts = {} 
-        MAX_TOTAL = 18
-        MAX_PER_CAT = 3      
+        MAX_TOTAL = 30
+        MAX_PER_CAT = 4      
 
         for flavor, curve in all_sorted:
             if len(final_candidates) >= MAX_TOTAL: break
@@ -834,7 +834,7 @@ class WineStreamAnalyzer:
 
         # 2. Text Labeling
         current_bottom_array = -0.5 * total_y
-        min_thickness_threshold = np.max(total_y) * 0.04
+        min_thickness_threshold = np.max(total_y) * 0.02
 
         for i, y_values in enumerate(y_stack_list):
             flavor_name = labels[i]
@@ -850,22 +850,36 @@ class WineStreamAnalyzer:
 
             if peak_height < min_thickness_threshold: continue
 
-            calculated_size = 10 + (peak_height * peak_height * 10) 
+            calculated_size = 9 + (peak_height * peak_height * 11) 
             
             # 너무 작거나 너무 크지 않게 제한 (Min 8, Max 16)
             final_fontsize = max(8, min(20, int(calculated_size)))
 
             # Rotation Calc
-            step = 5
+            step = 2  # 기존 5 or 12 -> 15로 확장하여 더 부드러운 평균 기울기 산출
             idx_prev = max(0, peak_idx - step)
             idx_next = min(len(x_axis) - 1, peak_idx + step)
+            
+            # 2. 실제 좌표상의 변위 계산
             dy = center_line_array[idx_next] - center_line_array[idx_prev]
-            dx = idx_next - idx_prev if idx_next != idx_prev else 1
-            slope = dy / dx
-            # [설정] 최대 각도 (원하는 값으로 변경)
-            MAX_ANGLE = 50 
-            # 적용
-            rotation_angle = max(-MAX_ANGLE, min(MAX_ANGLE, slope * 1000))
+            # 인덱스 거리를 전체 x축 대비 비율(0.0~1.0)로 변환
+            dx_ratio = (idx_next - idx_prev) / len(x_axis)
+            
+            # 3. atan를 이용한 각도 산출 및 강한 감쇠 적용
+            # 현재 그래프의 Y축 스케일과 X축 스케일 비율을 고려했을 때, 
+            # 단순히 dy/dx를 하면 각도가 너무 커집니다.
+            # 0.05 ~ 0.1 사이의 계수를 곱해 글자가 흐름보다 '완만하게' 느껴지도록 조정합니다.
+            if dx_ratio != 0:
+                visual_slope = dy / dx_ratio
+                # 0.07은 가독성을 위해 실험적으로 산출된 가장 안정적인 계수입니다.
+                rotation_angle = math.degrees(math.atan(visual_slope * 0.035))
+            else:
+                rotation_angle = 0
+            
+            # 4. 가독성 한계 각도 설정
+            # 스트림 그래프에서 30도 이상의 각도는 글자를 읽기 매우 어렵게 만듭니다.
+            MAX_READABLE_ANGLE = 50 
+            rotation_angle = max(-MAX_READABLE_ANGLE, min(MAX_READABLE_ANGLE, rotation_angle))
 
             text_color = self._get_interpolated_color(bg_color_hex, factor=0.6)
             ax.text(peak_x, center_y, flavor_name,
@@ -1493,23 +1507,32 @@ class CategoryTab(ttk.Frame):
         new_added_count = 0
         for winery_key, wines in winery_groups.items():
             best_wine = None
-            max_reviews = 2000
+            max_reviews = 0
+            found_high_rating = False
 
             # 리뷰 수(1순위)와 지역 상세도(2순위)로 대표 와인 선정
             for wine in wines:
                 v_info = wine.get('vintage', {})
                 count = v_info.get('reviews_count', 0) if isinstance(v_info, dict) else 0
+                rating = float(wine.get('rating', 0) or 0.0)
                 region_list = wine.get('region', [])
                 
-                if count > max_reviews:
+                if rating >= 4.0 and not found_high_rating:
+                    found_high_rating = True
                     max_reviews = count
                     best_wine = wine
-                elif count == max_reviews and best_wine is not None:
-                    curr_regions = best_wine.get('region', [])
-                    if len(region_list) > len(curr_regions):
+                
+                # 2. 이미 4.0 이상인 와인이 있는 상태에서, 더 리뷰가 많은 4.0 이상 와인 발견
+                elif rating >= 4.0 and found_high_rating:
+                    if count > max_reviews:
+                        max_reviews = count
                         best_wine = wine
-                elif best_wine is None:
-                    best_wine = wine
+                
+                # 3. 아직 4.0 이상을 못 찾았을 때, 일반 와인들 중 리뷰가 가장 많은 것 유지 (백업)
+                elif not found_high_rating:
+                    if count > max_reviews:
+                        max_reviews = count
+                        best_wine = wine
 
             # 4. [핵심] 경로 생성 및 'Cru' 필터링
             if best_wine:
@@ -1558,21 +1581,24 @@ class CategoryTab(ttk.Frame):
     # [2] 트리 구축 (동적 깊이 지원)
     # -------------------------------------------------------------------------
     def build_category_tree(self):
-        # 트리 초기화
+        # 1. 트리 초기화 및 루트 생성
         self.tree.delete(*self.tree.get_children())
         
-        # [수정 1] open=True를 open=False로 변경하여 초기 상태를 닫힘으로 설정
         self.tree.insert("", "end", "root_style", text="Wine Style", open=False)
-        self.tree.insert("", "end", "root_country", text="Country / Region", open=False)
+        self.tree.insert("", "end", "root_winery", text="Winery", open=False)
+        self.tree.insert("", "end", "root_region", text="Region", open=False)
 
-        # 1. Wine Style 생성
-        styles = set(str(w.get('wine_style')) for w in self.metadata if w.get('wine_style'))
-        for s in sorted(list(styles)):
-            # 스타일 하위 노드들은 어차피 리프 노드이므로 open 설정이 큰 의미는 없지만, 일관성을 위해 둡니다.
+        # ---------------------------------------------------------
+        # [STEP 1] Wine Style (기존 로직 유지)
+        # ---------------------------------------------------------
+        styles = sorted(list(set(str(w.get('wine_style')) for w in self.metadata if w.get('wine_style'))))
+        for s in styles:
             self.tree.insert("root_style", "end", text=s, values=("style", s))
 
-        # 2. 지역/와이너리 트리 구축
-        created_nodes = {}
+        # ---------------------------------------------------------
+        # [STEP 2] Winery (원본 코드 로직 그대로 유지)
+        # ---------------------------------------------------------
+        created_winery_nodes = {}
         my_wineries_meta = [w for w in self.metadata if w.get('winery')]
         my_wineries_meta.sort(key=lambda x: x.get('winery', '').lower())
         processed_wineries = set()
@@ -1580,36 +1606,66 @@ class CategoryTab(ttk.Frame):
         for wine_obj in my_wineries_meta:
             winery_name_real = wine_obj.get('winery')
             winery_key = winery_name_real.lower().strip()
-            
             if winery_key in processed_wineries: continue
 
+            # [원본 로직] master_db를 참조하고 없으면 Unknown 처리
             path = self.winery_master_db.get(winery_key, ["Unknown"])
-            current_parent = "root_country"
+            current_parent = "root_winery"
             
-            for i, folder_name in enumerate(path):
+            for folder_name in path:
                 safe_name = "".join(c for c in folder_name if c.isalnum())
-                node_id = f"{current_parent}_{safe_name}"
-                
-                if node_id not in created_nodes:
-                    if not self.tree.exists(node_id):
-                        tag = "country" if i == 0 else "folder"
-                        # [수정 2] 동적으로 생성되는 모든 지역/국가 폴더 노드도 open=False로 생성
-                        self.tree.insert(current_parent, "end", node_id, text=folder_name, 
-                                         values=(tag, folder_name), open=False)
-                    created_nodes[node_id] = True
-                
+                node_id = f"winery_path_{current_parent}_{safe_name}"
+                if not self.tree.exists(node_id):
+                    self.tree.insert(current_parent, "end", node_id, text=folder_name, values=("folder", folder_name), open=False)
                 current_parent = node_id
 
-            # 마지막 와이너리 노드 생성
-            w_id = f"winery_{winery_key}"
-            if w_id not in created_nodes:
-                # 리프 노드(와이너리)는 자식이 없으므로 open 설정이 필요 없습니다.
-                self.tree.insert(current_parent, "end", w_id, text=winery_name_real, values=("winery", winery_name_real))
-                created_nodes[w_id] = True
-            
+            w_id = f"winery_leaf_{winery_key}"
+            self.tree.insert(current_parent, "end", w_id, text=winery_name_real, values=("winery", winery_name_real))
             processed_wineries.add(winery_key)
 
-    # -------------------------------------------------------------------------
+        # ---------------------------------------------------------
+        # [STEP 3] Region (지능형 복구 로직 적용)
+        # ---------------------------------------------------------
+        VALID_COUNTRIES = ["Italy", "France", "Germany", "Spain", "United States", "USA", "Australia", "Chile", "Portugal"]
+        region_path_map = {}
+
+        # 1. 정상 와인으로 지역 경로 지도(Map) 생성
+        for wine in self.metadata:
+            c = wine.get('country', 'Unknown')
+            if c in VALID_COUNTRIES:
+                regs = wine.get('region', [])
+                if not isinstance(regs, list): regs = [regs] if regs else []
+                full_p = [c] + [str(r).strip() for r in regs if str(r).strip().lower() != c.lower()]
+                for i in range(1, len(full_p)):
+                    region_path_map[full_p[i]] = full_p[:i]
+
+        # 2. 모든 와인을 돌며 Region 트리 구축 (모호한 데이터는 지도 참조)
+        for wine in self.metadata:
+            c = wine.get('country', 'Unknown')
+            regs = wine.get('region', [])
+            if not isinstance(regs, list): regs = [regs] if regs else []
+            
+            corrected_path = None
+            if c not in VALID_COUNTRIES:
+                for key in [c] + regs:
+                    if key in region_path_map:
+                        corrected_path = region_path_map[key] + [key]
+                        break
+            
+            if not corrected_path:
+                if c in VALID_COUNTRIES:
+                    corrected_path = [c] + [str(r).strip() for r in regs if str(r).strip().lower() != c.lower()]
+                else:
+                    corrected_path = ["Unknown", c]
+
+            current_reg_parent = "root_region"
+            for r_name in corrected_path:
+                safe_r = "".join(c for c in r_name if c.isalnum())
+                # ID에 부모 ID를 포함시켜 소지역 이탈 방지
+                node_id = f"reg_path_{current_reg_parent}_{safe_r}"
+                if not self.tree.exists(node_id):
+                    self.tree.insert(current_reg_parent, "end", node_id, text=r_name, values=("region_filter", r_name), open=False)
+                current_reg_parent = node_id    # -------------------------------------------------------------------------
     # [3] UI 초기화 메서드들 (기존 유지)
     # -------------------------------------------------------------------------
     def _init_tree_view(self):
@@ -1670,33 +1726,47 @@ class CategoryTab(ttk.Frame):
         if not selected_items: return
         item_id = selected_items[0]
         
-        # [중요] 폴더(자식이 있는 노드)면 로딩 X
-        if self.tree.get_children(item_id): return 
-
         item_data = self.tree.item(item_id)
         values = item_data.get('values')
         if not values: return
 
-        filter_type, filter_value = values[0], values[1]
-        
-        # 폴더 태그가 있으면 무시
-        if filter_type in ['folder', 'country']: return
-
+        filter_type, filter_value = values[0], str(values[1])
         filtered_wines = []
-        
-        if filter_type == 'style':
-            filtered_wines = [w for w in self.metadata if str(w.get('wine_style')) == str(filter_value)]
-            self.lbl_category_title.config(text=f"Style: {filter_value}")
 
+        # [Winery 및 Style] 기존 로직 유지
+        if filter_type == 'style':
+            filtered_wines = [w for w in self.metadata if str(w.get('wine_style')) == filter_value]
+            self.lbl_category_title.config(text=f"Style: {filter_value}")
         elif filter_type == 'winery':
-            # 와이너리 이름으로 검색
-            filtered_wines = [w for w in self.metadata if str(w.get('winery')) == str(filter_value)]
+            filtered_wines = [w for w in self.metadata if str(w.get('winery')) == filter_value]
             self.lbl_category_title.config(text=f"Winery: {filter_value}")
 
-        self.update_wine_list(filtered_wines)
-        self.show_list_view()
+        # [Region 전용 필터링] 세부 산지 격리 로직
+        elif filter_type == 'region_filter':
+            parent_id = self.tree.parent(item_id)
+            is_country_node = (parent_id == "root_region")
 
-    # -------------------------------------------------------------------------
+            for w in self.metadata:
+                w_country = w.get('country', '')
+                w_regions = w.get('region', [])
+                if not isinstance(w_regions, list): w_regions = [w_regions] if w_regions else []
+                
+                if is_country_node:
+                    # 국가 클릭 시 해당 국가 모든 와인
+                    if w_country == filter_value:
+                        filtered_wines.append(w)
+                else:
+                    # 세부 지역 클릭 시: 해당 산지가 리스트의 '마지막'인 와인만 (Bourgogne 문제 해결)
+                    if w_regions and str(w_regions[-1]).strip() == filter_value:
+                        filtered_wines.append(w)
+                    # 만약 국가명이 잘못 기재되어 country 필드에 지역명이 들어간 경우도 체크
+                    elif not w_regions and w_country == filter_value:
+                        filtered_wines.append(w)
+
+            self.lbl_category_title.config(text=f"Region: {filter_value}")
+
+        self.update_wine_list(filtered_wines)
+        self.show_list_view()    # -------------------------------------------------------------------------
     # [5] 로딩 및 무한 스크롤 (이전과 동일)
     # -------------------------------------------------------------------------
     def update_wine_list(self, wines):
