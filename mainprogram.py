@@ -252,7 +252,7 @@ class WineStreamAnalyzer:
         add_flavors('Mineral', "#738BAC", ['petrol', 'kerosene', 'diesel'])
         add_flavors('Mineral', "#F3E7D0", ['beeswax', 'wax'])
 
-        add_flavors('Earthy', "#52332A", ['mushroom'])
+        add_flavors('Earthy', "#683D31", ['mushroom'])
         add_flavors('Earthy', "#5F503E", ['soil', 'dirt'])
         add_flavors('Earthy', "#857257", ['truffle'])
         add_flavors('Earthy', "#5D5F49", ['forest floor'])
@@ -263,20 +263,20 @@ class WineStreamAnalyzer:
         add_flavors('Honey', "#F3C164", ['honey'])
         add_flavors('Honey', "#E7CD9B", ['honeycomb'])
         add_flavors('Honey', "#F3C164", ['marmalade'])
-        add_flavors('Yeast', "#DFC790", ['bread'])
+        add_flavors('Yeast', "#CCA26A", ['bread'])
         add_flavors('Malolactic', "#F7F6C6", ['butter','buttery'])
         add_flavors('Malolactic', "#E7E1CD", ['cream'])
         add_flavors('Malolactic', '#EDD9A8', ['yeast'])
         add_flavors('Malolactic', '#EDD9A8', ['milk chocolate'])
-        add_flavors('Toasted', '#B88461', ['caramel'])
-        add_flavors('Toasted', "#C08A4B", ['butterscotch'])
-        add_flavors('Toasted', '#A37156', ['chocolate', 'cocoa'])
-        add_flavors('Toasted', '#8F604D', ['toast'])
+        add_flavors('Toasted', "#964A37", ['caramel'])
+        add_flavors('Toasted', "#AA6841", ['butterscotch'])
+        add_flavors('Toasted', "#8A5D45", ['chocolate', 'cocoa'])
+        add_flavors('Toasted', "#6E4D3A", ['toast'])
         add_flavors('Toasted', '#7A5043', ['coffee', 'espresso'])
-        add_flavors('Toasted', "#36211B", ['mocha'])
+        add_flavors('Toasted', "#533127", ['mocha'])
         add_flavors('Toasted', '#66423A', ['bacon', 'meaty'])
-        add_flavors('Toasted', '#543632', ['smoke'])
-        add_flavors('Toasted', '#422C2A', ['tar'])
+        add_flavors('Toasted', "#6B3630", ['smoke'])
+        add_flavors('Toasted', "#3A211E", ['tar'])
         #add_flavors('Tannin', "#302646", ['tannin'])
         add_flavors('Spice', '#D48642', ['vanilla'])
         add_flavors('Spice', '#CC783B', ['pepper', 'black pepper'])
@@ -289,16 +289,16 @@ class WineStreamAnalyzer:
         add_flavors('Nuts', '#E3A836', ['coconut'])
         add_flavors('Nuts', '#D69830', ['hazelnut'])
         add_flavors('Nuts', '#C9892B', ['almond'])
-        add_flavors('Woods', '#B8762B', ['oak', 'oaky'])
-        add_flavors('Woods', '#A86628', ['sandalwood'])
+        add_flavors('Woods', "#64472E", ['oak', 'oaky'])
+        add_flavors('Woods', "#815328", ['sandalwood'])
         add_flavors('Woods', '#965725', ['cedar'])
-        add_flavors('Woods', '#854923', ['pine'])
-        add_flavors('Woods', "#382B23", ['graphite','lead pencil','pencil shaving'])
-        add_flavors('Animal', '#7A5C55', ['leather', 'saddle'])
+        add_flavors('Woods', "#855E23", ['pine'])
+        add_flavors('Woods', "#41332A", ['graphite','lead pencil','pencil shaving'])
+        add_flavors('Animal', "#885B40", ['leather', 'saddle'])
         add_flavors('Animal', '#694D47', ['gravy'])
-        add_flavors('Animal', "#6D3333", ['game','barnyard'])
-        add_flavors('Animal', "#D37843", ['musk'])
-        add_flavors('Sulfuric', "#D37843", ['gun powder'])
+        add_flavors('Animal', "#691B1B", ['game','barnyard'])
+        add_flavors('Animal', "#CE865C", ['musk'])
+        add_flavors('Sulfuric', "#DFAC4D", ['gun powder'])
         add_flavors('Funky', "#C4A6C5", ['bubble gum','gum'])
         add_flavors('Faults', '#7DC4CC', ['corked', 'musty'])
         add_flavors('Faults', "#502037", ['sherry', 'oxidized']) 
@@ -511,6 +511,7 @@ class WineStreamAnalyzer:
     # : 저장된 json 데이터를 불러와 매우 빠르게 그래프를 그립니다.
     # =========================================================================
     def create_graph_from_data(self, data_file_path):
+        
         """
         저장된 분석 데이터(.json)를 읽어서 Streamgraph Figure를 반환합니다.
         NLP 분석 과정이 생략되므로 속도가 매우 빠릅니다.
@@ -539,6 +540,7 @@ class WineStreamAnalyzer:
              # count가 저장되어 있으면 쓰고, 없으면 리스트 길이로 추정
             cnt = data.get('count', len(data['x']))
             if cnt > max_mention: max_mention = cnt
+
 
         for flavor, data in flavor_data.items():
             if flavor in self.flavor_families.keys(): continue # "Fruity" 같은 추상적 키워드는 제외
@@ -571,7 +573,9 @@ class WineStreamAnalyzer:
             # [Sculpting] 모양 다듬기 (기존 로직 계승)
             # 1. 랭킹 가중치
             ratio = count / max_mention if max_mention > 0 else 0
-            rank_weight = np.interp(ratio, [0.0, 0.33, 0.5, 1.0], [0.4, 0.5, 0.8, 1.0])
+            rank_weight = np.interp(ratio, 
+                        [0.0, 0.03, 0.08, 0.1, 0.33, 0.5, 1.0], 
+                        [0.0, 0.0, 0.3, 0.4, 0.6, 0.7, 1.0])
             
             # 2. 정규화 및 샤프닝
             peak_height = np.max(curve)
@@ -644,7 +648,30 @@ class WineStreamAnalyzer:
             colors.append(info['color'])
             categories.append(info['category'])
 
-        # --- Stack Drawing Logic (기존과 동일) ---
+        # --- [추가] 카테고리별 블러 제어 마스크 계산 ---
+        # 카테고리 내 모든 flavor의 수치를 곱하여, 하나라도 0이면 블러가 0이 되도록 함
+        category_blur_masks = {}
+        unique_cats = set(categories)
+        for c_name in unique_cats:
+            # 해당 카테고리에 속한 모든 y_values 리스트 추출
+            cat_y_list = [y_stack_list[j] for j, cn in enumerate(categories) if cn == c_name]
+            
+            if len(cat_y_list) > 1:
+                # 모든 요소를 곱함 (어느 하나가 0이면 결과는 0)
+                prod = np.prod(cat_y_list, axis=0)
+                # 정규화 (0~1 사이로 변환하여 블러 강도 계수로 사용)
+                max_p = np.max(prod)
+                if max_p > 1e-9:
+                    category_blur_masks[c_name] = prod / max_p
+                else:
+                    category_blur_masks[c_name] = np.zeros_like(x_axis)
+            else:
+                # flavor가 하나뿐인 카테고리는 자기 자신의 두께에 비례하도록 설정
+                single_y = cat_y_list[0]
+                max_y = np.max(single_y)
+                category_blur_masks[c_name] = (single_y / max_y) if max_y > 0 else np.zeros_like(x_axis)
+
+        # --- Stack Drawing Logic (기존 로직 수정) ---
         total_y = np.sum(y_stack_list, axis=0)
         current_bottom = -0.5 * total_y 
         num_layers = len(y_stack_list)
@@ -654,6 +681,9 @@ class WineStreamAnalyzer:
             color = colors[i]
             cat = categories[i]
             
+            # 현재 카테고리의 마스크 가져오기
+            blur_mask = category_blur_masks.get(cat, np.ones_like(x_axis))
+            
             center = current_bottom + (y / 2)
             radius = y / 2
             
@@ -661,17 +691,21 @@ class WineStreamAnalyzer:
             prev_cat = categories[i-1] if i > 0 else None
             next_cat = categories[i+1] if i < num_layers - 1 else None
             
-            blur_factors = [1.8, 1.5, 1.25, 1.1] 
-            blur_alphas  = [0.1, 0.15, 0.25, 0.4]
+            blur_factors = [2.0, 1.9, 1.8, 1.4, 1.2] 
+            blur_alphas  = [0.1, 0.2, 0.25, 0.3, 0.36]
 
             for factor, alpha in zip(blur_factors, blur_alphas):
-                scale_up = factor if (cat == next_cat) else 1.0
-                scale_down = factor if (cat == prev_cat) else 1.0
-                y1 = center - (radius * scale_down)
-                y2 = center + (radius * scale_up)
+                # 기존 scale 값에 blur_mask를 곱해 적용
+                # factor가 1.0보다 큰 부분(확장분)에 대해서만 마스크를 적용하여 
+                # 두께가 얇아지는 곳에서 블러가 수축되도록 함
+                effective_scale_up = 1.0 + (factor - 1.0) * blur_mask if (cat == next_cat) else 1.0
+                effective_scale_down = 1.0 + (factor - 1.0) * blur_mask if (cat == prev_cat) else 1.0
+                
+                y1 = center - (radius * effective_scale_down)
+                y2 = center + (radius * effective_scale_up)
                 ax.fill_between(x_axis, y1, y2, color=color, alpha=alpha, linewidth=0)
 
-            # Main Body
+            # Main Body (실제 데이터 곡선)
             ax.fill_between(x_axis, current_bottom, current_bottom + y, color=color, alpha=0.9, linewidth=0)
             current_bottom += y
 
@@ -832,6 +866,19 @@ class WineStreamAnalyzer:
         ax.fill_between(x_axis, -mask_limit, graph_bottom_boundary, color=bg_color, linewidth=0, zorder=3)
         ax.set_xlim(-0.05, 1.05)
 
+        # Y축 범위 미리 계산
+        y_visual_max = np.max(total_y) * 0.6
+        y_offset = np.max(total_y) * 0.20
+        y_top_limit = (y_visual_max + y_offset) * (1.0 - 0.33)
+        label_margin = np.max(total_y) * 0.10
+        min_graph_bottom = np.min(graph_bottom_boundary)
+        y_bottom_limit = (min_graph_bottom - label_margin) - np.max(total_y) * 0.05
+
+        # [중요] 라벨을 그리기 전에 미리 축 범위를 확정지어야 함
+        ax.set_xlim(-0.05, 1.05)
+        ax.set_ylim(y_bottom_limit, y_top_limit)
+        ax.axis('off')
+
         # 2. Text Labeling
         current_bottom_array = -0.5 * total_y
         min_thickness_threshold = np.max(total_y) * 0.02
@@ -841,48 +888,35 @@ class WineStreamAnalyzer:
             bg_color_hex = colors[i]
             
             peak_idx = np.argmax(y_values)
-            peak_x = x_axis[peak_idx]
-            peak_height = y_values[peak_idx]
-            
             center_line_array = current_bottom_array + (y_values / 2)
             center_y = center_line_array[peak_idx]
+            peak_height = y_values[peak_idx]
             current_bottom_array += y_values
 
             if peak_height < min_thickness_threshold: continue
 
-            calculated_size = 9 + (peak_height * peak_height * 11) 
-            
-            # 너무 작거나 너무 크지 않게 제한 (Min 8, Max 16)
-            final_fontsize = max(8, min(20, int(calculated_size)))
-
-            # Rotation Calc
-            step = 2  # 기존 5 or 12 -> 15로 확장하여 더 부드러운 평균 기울기 산출
+            # --- 픽셀 기반 각도 계산 ---
+            step = 10 # 유칼립투스 같은 급경사를 잡기 위해 좁은 범위 관찰
             idx_prev = max(0, peak_idx - step)
             idx_next = min(len(x_axis) - 1, peak_idx + step)
-            
-            # 2. 실제 좌표상의 변위 계산
-            dy = center_line_array[idx_next] - center_line_array[idx_prev]
-            # 인덱스 거리를 전체 x축 대비 비율(0.0~1.0)로 변환
-            dx_ratio = (idx_next - idx_prev) / len(x_axis)
-            
-            # 3. atan를 이용한 각도 산출 및 강한 감쇠 적용
-            # 현재 그래프의 Y축 스케일과 X축 스케일 비율을 고려했을 때, 
-            # 단순히 dy/dx를 하면 각도가 너무 커집니다.
-            # 0.05 ~ 0.1 사이의 계수를 곱해 글자가 흐름보다 '완만하게' 느껴지도록 조정합니다.
-            if dx_ratio != 0:
-                visual_slope = dy / dx_ratio
-                # 0.07은 가독성을 위해 실험적으로 산출된 가장 안정적인 계수입니다.
-                rotation_angle = math.degrees(math.atan(visual_slope * 0.035))
-            else:
-                rotation_angle = 0
-            
-            # 4. 가독성 한계 각도 설정
-            # 스트림 그래프에서 30도 이상의 각도는 글자를 읽기 매우 어렵게 만듭니다.
-            MAX_READABLE_ANGLE = 50 
-            rotation_angle = max(-MAX_READABLE_ANGLE, min(MAX_READABLE_ANGLE, rotation_angle))
 
+            # 데이터 좌표를 픽셀 좌표로 변환 (ax.transData 사용)
+            p_prev = ax.transData.transform((x_axis[idx_prev], center_line_array[idx_prev]))
+            p_next = ax.transData.transform((x_axis[idx_next], center_line_array[idx_next]))
+
+            # 픽셀 변위로 각도 계산 (보정 계수 0.7 제거, 1.0 사용)
+            d_x = p_next[0] - p_prev[0]
+            d_y = p_next[1] - p_prev[1]
+            rotation_angle = math.degrees(math.atan2(d_y, d_x))
+
+            # 가독성 한계 각도 완화
+            MAX_ANGLE = 55
+            rotation_angle = max(-MAX_ANGLE, min(MAX_ANGLE, rotation_angle))
+
+            final_fontsize = max(8, min(20, int(9 + (peak_height * peak_height * 11))))
             text_color = self._get_interpolated_color(bg_color_hex, factor=0.6)
-            ax.text(peak_x, center_y, flavor_name,
+            
+            ax.text(x_axis[peak_idx], center_y, flavor_name,
                     ha='center', va='center', fontsize=final_fontsize, fontweight='bold',
                     color=text_color, rotation=rotation_angle, rotation_mode='anchor', zorder=10)
 
@@ -1517,13 +1551,13 @@ class CategoryTab(ttk.Frame):
                 rating = float(wine.get('rating', 0) or 0.0)
                 region_list = wine.get('region', [])
                 
-                if rating >= 4.0 and not found_high_rating:
+                if rating <= 4.0 and rating >=3.8 and not found_high_rating:
                     found_high_rating = True
                     max_reviews = count
                     best_wine = wine
                 
                 # 2. 이미 4.0 이상인 와인이 있는 상태에서, 더 리뷰가 많은 4.0 이상 와인 발견
-                elif rating >= 4.0 and found_high_rating:
+                elif rating <= 4.0 and rating >=3.8 and found_high_rating:
                     if count > max_reviews:
                         max_reviews = count
                         best_wine = wine
